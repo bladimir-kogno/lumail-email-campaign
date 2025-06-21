@@ -1,35 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { sendScheduledCampaigns } from '@/lib/email'
 
-export async function GET(request: NextRequest) {
-  // Verify cron secret to prevent unauthorized access
+export async function GET(request: Request) {
+  // Verify the request is from a valid source (e.g., cron job)
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
+
+  // Optional: Add authentication for your cron job
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const results = await sendScheduledCampaigns()
-    
+    const result = await sendScheduledCampaigns()
+
     return NextResponse.json({
       success: true,
-      processed: results.length,
-      results
+      message: result.message,
+      // If result contains processed campaigns, include them
+      ...(result.processed && { processed: result.processed })
     })
   } catch (error) {
-    console.error('Error in cron job:', error)
-    return NextResponse.json(
-      { error: 'Failed to process scheduled campaigns' },
-      { status: 500 }
-    )
+    console.error('Error sending scheduled campaigns:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to send scheduled campaigns'
+    }, { status: 500 })
   }
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request)
 }

@@ -1,72 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
+// If your /app/api/campaigns/route.ts is importing Resend directly, change it to:
+
 import { prisma } from '@/lib/prisma'
-import { sendCampaign } from '@/lib/email'
+import { sendEmail } from '@/lib/email'  // Use the email lib instead of Resend directly
+import { NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
+// Don't import or initialize Resend directly in your routes
+// Use the sendEmail function from lib/email instead
+
+export async function GET() {
   try {
-    const { name, subject, htmlContent, listId, scheduledAt, sendNow } = await request.json()
-    
-    if (!name || !subject || !htmlContent || !listId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const campaigns = await prisma.campaign.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
+    return NextResponse.json(campaigns)
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 })
+  }
+}
 
-    // Validate scheduled time if not sending now
-    if (!sendNow && scheduledAt) {
-      const scheduledDate = new Date(scheduledAt)
-      const now = new Date()
-      const minTime = new Date(now.getTime() + 5 * 60000) // 5 minutes from now
-      
-      if (scheduledDate < minTime) {
-        return NextResponse.json(
-          { error: 'Scheduled time must be at least 5 minutes in the future' },
-          { status: 400 }
-        )
-      }
-    }
+export async function POST(request: Request) {
+  try {
+    const data = await request.json()
 
-    // Create the campaign
+    // Create campaign in database
     const campaign = await prisma.campaign.create({
       data: {
-        name,
-        subject,
-        htmlContent,
-        listId,
-        status: sendNow ? 'SENT' : scheduledAt ? 'SCHEDULED' : 'DRAFT',
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-        sentAt: sendNow ? new Date() : null,
-      },
+        name: data.name,
+        subject: data.subject,
+        htmlContent: data.content || data.htmlContent || '', // Map content to htmlContent
+        status: data.status || 'draft',
+        // listId is optional, only add if provided
+        ...(data.listId && { listId: data.listId }),
+        ...(data.scheduledAt && { scheduledAt: new Date(data.scheduledAt) }),
+      }
     })
 
-    // If sending now, send the campaign immediately
-    if (sendNow) {
-      try {
-        await sendCampaign(campaign.id)
-      } catch (error) {
-        console.error('Error sending campaign:', error)
-        // Update campaign status to draft if sending failed
-        await prisma.campaign.update({
-          where: { id: campaign.id },
-          data: { 
-            status: 'DRAFT',
-            sentAt: null 
-          }
-        })
-        return NextResponse.json(
-          { error: 'Campaign created but failed to send. You can try sending it again from the campaign page.' },
-          { status: 500 }
-        )
-      }
+    // If you need to send emails, use the sendEmail function
+    if (data.sendImmediately) {
+      await sendEmail({
+        to: data.recipients,
+        subject: data.subject,
+        html: data.content
+      })
     }
-    
+
     return NextResponse.json(campaign)
   } catch (error) {
-    console.error('Error creating campaign:', error)
-    return NextResponse.json(
-      { error: 'Failed to create campaign' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 })
   }
 }

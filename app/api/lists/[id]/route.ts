@@ -1,22 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const subscribers = await prisma.subscriber.findMany({
-      where: { 
+      where: {
         listId: params.id,
-        active: true 
+        status: 'active'  // Changed from 'active: true' to 'status: "active"'
       },
       orderBy: { createdAt: 'desc' }
     })
-    
+
     return NextResponse.json(subscribers)
   } catch (error) {
-    console.error('Error fetching subscribers:', error)
     return NextResponse.json(
       { error: 'Failed to fetch subscribers' },
       { status: 500 }
@@ -24,64 +23,49 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
+export async function PUT(
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { email, firstName, lastName } = await request.json()
-    
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      )
-    }
+    const data = await request.json()
 
-    // Check if subscriber already exists
-    const existingSubscriber = await prisma.subscriber.findUnique({
-      where: {
-        email_listId: {
-          email,
-          listId: params.id
-        }
-      }
-    })
-
-    if (existingSubscriber) {
-      if (!existingSubscriber.active) {
-        // Reactivate subscriber
-        const updatedSubscriber = await prisma.subscriber.update({
-          where: { id: existingSubscriber.id },
-          data: { 
-            active: true,
-            firstName: firstName || existingSubscriber.firstName,
-            lastName: lastName || existingSubscriber.lastName
-          }
-        })
-        return NextResponse.json(updatedSubscriber)
-      } else {
-        return NextResponse.json(
-          { error: 'Subscriber already exists' },
-          { status: 409 }
-        )
-      }
-    }
-
-    const subscriber = await prisma.subscriber.create({
+    const list = await prisma.list.update({
+      where: { id: params.id },
       data: {
-        email,
-        firstName,
-        lastName,
-        listId: params.id,
+        name: data.name,
+        description: data.description
       }
     })
-    
-    return NextResponse.json(subscriber)
+
+    return NextResponse.json(list)
   } catch (error) {
-    console.error('Error creating subscriber:', error)
     return NextResponse.json(
-      { error: 'Failed to create subscriber' },
+      { error: 'Failed to update list' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Delete all subscribers in the list first
+    await prisma.subscriber.deleteMany({
+      where: { listId: params.id }
+    })
+
+    // Then delete the list
+    await prisma.list.delete({
+      where: { id: params.id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to delete list' },
       { status: 500 }
     )
   }

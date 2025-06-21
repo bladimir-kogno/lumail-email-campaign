@@ -1,10 +1,30 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  subject     String
+  htmlContent String // Changed from 'content' to 'htmlContent'
+  status      String    @default("draft")
+  listId      String?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  list   List?   @relation(fields: [listId], references: [id])
+  emails Email[]
 }
 
 model List {
@@ -13,68 +33,40 @@ model List {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
+  // Relations
   subscribers Subscriber[]
   campaigns   Campaign[]
-  
-  @@map("lists")
 }
 
 model Subscriber {
   id        String   @id @default(cuid())
-  email     String
+  email     String   @unique
   firstName String?
   lastName  String?
+  status    String   @default("active")
   listId    String
-  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  list       List         @relation(fields: [listId], references: [id], onDelete: Cascade)
-  emailLogs  EmailLog[]
-  
-  @@unique([email, listId])
-  @@map("subscribers")
+
+  // Relations
+  list   List    @relation(fields: [listId], references: [id])
+  emails Email[]
 }
 
-model Campaign {
-  id          String         @id @default(cuid())
-  name        String
-  subject     String
-  htmlContent String
-  listId      String
-  status      CampaignStatus @default(DRAFT)
-  scheduledAt DateTime?
-  sentAt      DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  
-  list      List       @relation(fields: [listId], references: [id], onDelete: Cascade)
-  emailLogs EmailLog[]
-  
-  @@map("campaigns")
-}
-
-model EmailLog {
+model Email {
   id           String    @id @default(cuid())
   campaignId   String
   subscriberId String
-  trackingId   String    @unique
-  sent         Boolean   @default(false)
-  opened       Boolean   @default(false)
-  openedAt     DateTime?
+  status       String    @default("pending")
   sentAt       DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
   createdAt    DateTime  @default(now())
-  
-  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  subscriber Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
-  
-  @@map("email_logs")
-}
 
-enum CampaignStatus {
-  DRAFT
-  SCHEDULED
-  SENT
-  CANCELLED
+  // Relations
+  campaign   Campaign   @relation(fields: [campaignId], references: [id])
+  subscriber Subscriber @relation(fields: [subscriberId], references: [id])
+
+  @@unique([campaignId, subscriberId])
 }

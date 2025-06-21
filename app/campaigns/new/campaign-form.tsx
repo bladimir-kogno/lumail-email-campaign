@@ -209,21 +209,21 @@ export default function CampaignForm() {
                   onClick={() => insertPlaceholder('{{firstName}}')}
                   className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
                 >
-                  Insert {{firstName}}
+                  Insert {'{{firstName}}'}
                 </button>
                 <button
                   type="button"
                   onClick={() => insertPlaceholder('{{lastName}}')}
                   className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
                 >
-                  Insert {{lastName}}
+                  Insert {'{{lastName}}'}
                 </button>
                 <button
                   type="button"
                   onClick={() => insertPlaceholder('{{unsubscribeUrl}}')}
                   className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
                 >
-                  Insert {{unsubscribeUrl}}
+                  Insert {'{{unsubscribeUrl}}'}
                 </button>
               </div>
 
@@ -237,7 +237,7 @@ export default function CampaignForm() {
                 placeholder="Enter your HTML email content here..."
               />
               <p className="mt-1 text-xs text-gray-500">
-                Use {{firstName}}, {{lastName}}, and {{unsubscribeUrl}} as placeholders for personalization.
+                Use {'{{firstName}}'}, {'{{lastName}}'}, and {'{{unsubscribeUrl}}'} as placeholders for personalization.
               </p>
             </div>
 
