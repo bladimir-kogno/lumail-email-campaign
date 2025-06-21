@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 async function getStats() {
   const [listsCount, subscribersCount, campaignsCount] = await Promise.all([
     prisma.list.count(),
-    prisma.subscriber.count({ where: { active: true } }),
+    prisma.subscriber.count({ where: { status: "active" } }),
     prisma.campaign.count(),
   ])
 

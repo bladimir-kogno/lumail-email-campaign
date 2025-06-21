@@ -1,22 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const subscribers = await prisma.subscriber.findMany({
-      where: { 
+      where: {
         listId: params.id,
-        active: true 
+        status: 'active'  // Changed from 'status: "active"' to 'status: "active"'
       },
       orderBy: { createdAt: 'desc' }
     })
-    
+
     return NextResponse.json(subscribers)
   } catch (error) {
-    console.error('Error fetching subscribers:', error)
     return NextResponse.json(
       { error: 'Failed to fetch subscribers' },
       { status: 500 }
@@ -25,61 +24,36 @@ export async function GET(
 }
 
 export async function POST(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { email, firstName, lastName } = await request.json()
-    
-    if (!email) {
+    const data = await request.json()
+
+    // Check if subscriber already exists
+    const existing = await prisma.subscriber.findUnique({
+      where: { email: data.email }
+    })
+
+    if (existing) {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Subscriber already exists' },
         { status: 400 }
       )
     }
 
-    // Check if subscriber already exists
-    const existingSubscriber = await prisma.subscriber.findUnique({
-      where: {
-        email_listId: {
-          email,
-          listId: params.id
-        }
-      }
-    })
-
-    if (existingSubscriber) {
-      if (!existingSubscriber.active) {
-        // Reactivate subscriber
-        const updatedSubscriber = await prisma.subscriber.update({
-          where: { id: existingSubscriber.id },
-          data: { 
-            active: true,
-            firstName: firstName || existingSubscriber.firstName,
-            lastName: lastName || existingSubscriber.lastName
-          }
-        })
-        return NextResponse.json(updatedSubscriber)
-      } else {
-        return NextResponse.json(
-          { error: 'Subscriber already exists' },
-          { status: 409 }
-        )
-      }
-    }
-
     const subscriber = await prisma.subscriber.create({
       data: {
-        email,
-        firstName,
-        lastName,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
         listId: params.id,
+        status: 'active'
       }
     })
-    
+
     return NextResponse.json(subscriber)
   } catch (error) {
-    console.error('Error creating subscriber:', error)
     return NextResponse.json(
       { error: 'Failed to create subscriber' },
       { status: 500 }

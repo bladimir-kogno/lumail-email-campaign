@@ -7,7 +7,7 @@ async function getLists() {
     include: {
       _count: {
         select: {
-          subscribers: { where: { active: true } }
+          subscribers: { where: { status: "active" } }
         }
       }
     },

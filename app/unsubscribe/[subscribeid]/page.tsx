@@ -15,7 +15,7 @@ async function unsubscribeUser(subscriberId: string) {
     // Deactivate the subscriber
     await prisma.subscriber.update({
       where: { id: subscriberId },
-      data: { active: false }
+      data: { status: "inactive" }
     })
 
     return {
@@ -44,7 +44,7 @@ export default async function UnsubscribePage({
       include: { list: true }
     })
 
-    if (!subscriber || !subscriber.active) {
+    if (!subscriber || subscriber.status !== 'active') {
       notFound()
     }
 

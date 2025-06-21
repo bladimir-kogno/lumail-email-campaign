@@ -8,7 +8,7 @@ async function getListWithSubscribers(listId: string) {
     where: { id: listId },
     include: {
       subscribers: {
-        where: { active: true },
+        where: { status: "active" },
         orderBy: { createdAt: 'desc' }
       }
     }

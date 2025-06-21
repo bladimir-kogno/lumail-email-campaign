@@ -9,7 +9,7 @@ export async function GET(
     const subscribers = await prisma.subscriber.findMany({
       where: {
         listId: params.id,
-        status: 'active'  // Changed from 'active: true' to 'status: "active"'
+        status: 'active'  // Changed from 'status: "active"' to 'status: "active"'
       },
       orderBy: { createdAt: 'desc' }
     })

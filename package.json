@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^6.10.1",
     "autoprefixer": "^10.4.16",
     "date-fns": "^2.30.0",
     "next": "^14.2.30",
