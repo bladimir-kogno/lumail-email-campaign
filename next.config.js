@@ -1,14 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true,
-  },
-  env: {
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    DATABASE_URL: process.env.DATABASE_URL,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    CRON_SECRET: process.env.CRON_SECRET,
-  },
+  // Remove experimental.serverActions as it's now default
+  // Remove env section as it's not needed in next.config.js
 }
 
 module.exports = nextConfig
