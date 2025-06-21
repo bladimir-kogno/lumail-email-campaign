@@ -51,11 +51,17 @@ export async function sendCampaign(campaignId: string) {
 
       // Add tracking pixel
       const trackingPixel = `<img src="${appUrl}/api/track/${trackingId}" width="1" height="1" style="display:none;" />`
-      personalizedContent = personalizedContent.replace('</body>', `${trackingPixel}</body>`)
+      
+      // Insert tracking pixel before closing body tag or append if no body tag
+      if (personalizedContent.includes('</body>')) {
+        personalizedContent = personalizedContent.replace('</body>', `${trackingPixel}</body>`)
+      } else {
+        personalizedContent += trackingPixel
+      }
 
       // Send email via Resend
       const { data, error } = await resend.emails.send({
-        from: 'noreply@yourdomain.com', // Replace with your verified domain
+        from: process.env.FROM_EMAIL || 'noreply@example.com', // Use env variable
         to: [subscriber.email],
         subject: campaign.subject,
         html: personalizedContent,
@@ -77,7 +83,7 @@ export async function sendCampaign(campaignId: string) {
       }
     } catch (error) {
       console.error(`Error processing email for ${subscriber.email}:`, error)
-      results.push({ email: subscriber.email, success: false, error })
+      results.push({ email: subscriber.email, success: false, error: error instanceof Error ? error.message : 'Unknown error' })
     }
   }
 
