@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model List {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  subscribers Subscriber[]
+  campaigns   Campaign[]
+  
+  @@map("lists")
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String
+  firstName String?
+  lastName  String?
+  listId    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  list       List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  emailLogs  EmailLog[]
+  
+  @@unique([email, listId])
+  @@map("subscribers")
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  subject     String
+  htmlContent String
+  listId      String
+  status      CampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  list      List       @relation(fields: [listId], references: [id], onDelete: Cascade)
+  emailLogs EmailLog[]
+  
+  @@map("campaigns")
+}
+
+model EmailLog {
+  id           String    @id @default(cuid())
+  campaignId   String
+  subscriberId String
+  trackingId   String    @unique
+  sent         Boolean   @default(false)
+  opened       Boolean   @default(false)
+  openedAt     DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  
+  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriber Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  
+  @@map("email_logs")
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  CANCELLED
+}
